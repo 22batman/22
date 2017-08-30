@@ -1,0 +1,92 @@
+
+
+'Dim rec As List(Of iTextSharp.text.Rectangle) = _
+                '    PDFTextGetter("Authorised Signatory.", _
+                '                  StringComparison.CurrentCultureIgnoreCase, SourcePdfFileName, Stamper)
+
+
+
+
+
+
+
+ Private Function PDFTextGetter(ByVal pSearch As String, _
+                                  ByVal SC As StringComparison, _
+                                  ByVal SourceFile As String, _
+                                  ByRef stamper As iTextSharp.text.pdf.PdfStamper
+                                  ) As List(Of iTextSharp.text.Rectangle)
+            ''Dim stamper As iTextSharp.text.pdf.PdfStamper = Nothing
+            Dim cb As iTextSharp.text.pdf.PdfContentByte = Nothing
+            Dim MatchesFound As List(Of iTextSharp.text.Rectangle) = Nothing
+
+
+            If File.Exists(SourceFile) Then
+                Dim pReader As New PdfReader(SourceFile)
+                Dim Startpage As Integer
+                If pReader.NumberOfPages > 20 Then
+                    Startpage = pReader.NumberOfPages - 10
+                Else
+                    Startpage = 1
+                End If
+                'manind'stamper = New iTextSharp.text.pdf.PdfStamper(pReader, New System.IO.FileStream(DestinationFile, IO.FileMode.Create))
+                Dim strategy As myLocationTextExtractionStrategy = New myLocationTextExtractionStrategy
+                For page As Integer = Startpage To pReader.NumberOfPages
+
+                    cb = stamper.GetUnderContent(page)
+
+                    'Send some data contained in PdfContentByte, looks like the first is always cero for me and the second 100, but i'm not sure if this could change in some cases
+                    strategy.UndercontentCharacterSpacing = cb.CharacterSpacing
+                    strategy.UndercontentHorizontalScaling = cb.HorizontalScaling
+
+                    'It's not really needed to get the text back, but we have to call this line ALWAYS, 
+                    'because it triggers the process that will get all chunks from PDF into our strategy Object
+                    Dim currentText As String = PdfTextExtractor.GetTextFromPage(pReader, page, strategy)
+
+                    'The real getter process starts in the following line
+                    MatchesFound = strategy.GetTextLocations(pSearch, SC)
+
+
+                    pReader.Close() 'manind'
+                    ''Return MatchesFound 'manind'
+                    'Set the fill color of the shapes, I don't use a border because it would make the rect bigger
+                    'but maybe using a thin border could be a solution if you see the currect rect is not big enough to cover all the text it should cover
+                    ''cb.SetColorFill(BaseColor.PINK)
+
+                    'MatchesFound contains all text with locations, so do whatever you want with it, this highlights them using PINK color:
+
+                    ''Dim ImgSource As String = "C:\Users\MAGARWAL\Desktop\Billing Reports\Untitled.png"
+
+                    ''Dim inputImageStream As FileStream = New FileStream(ImgSource, FileMode.Open, FileAccess.Read, FileShare.Read)
+                    ''FileStream inputImageStream = new FileStream(ImgSource, FileMode.Open, FileAccess.Read, FileShare.Read); // for image
+
+
+
+                    ''Dim pdfContentByte As iTextSharp.text.pdf.PdfContentByte = stamper.GetOverContent(page)
+                    ''var pdfContentByte = pdfStamper.GetOverContent(1); //for image
+                    ''Dim image As Image = image.GetInstance(inputImageStream)
+
+
+                    'For Each rect As iTextSharp.text.Rectangle In MatchesFound
+                    '    cb.Rectangle(rect.Left, rect.Bottom, rect.Width, rect.Height)
+                    '    image.SetAbsolutePosition(rect.Left, rect.Bottom + 24)
+                    '    ''pdfContentByte.AddImage(
+                    '    pdfContentByte.AddImage(image)
+                    'Next
+                    ''cb.Fill()
+
+
+                    ''Image image = Image.GetInstance(inputImageStream);//for image
+                    ''//image.
+                    '
+                    'PB.Value = PB.Value + 1
+                    ''pReader.Close()
+                Next
+                ''stamper.Close()
+
+                Return MatchesFound
+            Else
+                Return Nothing
+            End If
+
+
+        End Function
